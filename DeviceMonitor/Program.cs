@@ -1,15 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// See https://aka.ms/new-console-template for more information
 
-namespace DeviceMonitor
+
+using System.Net;
+using System.Xml.Linq;
+
+DeviceMonitor.DeviceMonitor deviceMonitor = new DeviceMonitor.DeviceMonitor(IPAddress.Parse("127.0.0.1"), 6666);
+deviceMonitor.StartDataReceiving();
+
+while (deviceMonitor.ReceivedDataCount() <= 10)
 {
-    internal class Program
-    {
-        static void Main(string[] args)
-        {
-        }
-    }
+        Thread.Sleep(1000);
 }
+
+deviceMonitor.StopDataReceiving();
+XDocument doc = deviceMonitor.CountOfReceivedMessagesGroupedByDevicess();
+Console.WriteLine(doc.ToString());
+
+Console.WriteLine("hotovo");
+Console.ReadKey();
