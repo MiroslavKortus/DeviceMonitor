@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DeviceMonitor
 {
@@ -143,13 +144,14 @@ namespace DeviceMonitor
                     var received = await handler.ReceiveAsync(buffer, SocketFlags.None);
                     if (Encoding.UTF8.GetString(buffer, 0, buffer.Length).IndexOf(_eom) == 9)
                     {
+                        // indexMessage + deviceId
+                        byte[] indexMessageDeviceId = buffer.Take(5).ToArray();
+                        
                         // Create response: indexMessage + deviceId + _ack
-                        byte[] byteDeviceID = GetDeviceIdInBytesFromReceivedData(buffer);
                         byte[] byteAck = Encoding.UTF8.GetBytes(_ack);
-                        byte[] ack = new byte[byteDeviceID.Length + byteAck.Length + 1];
-                        ack[0] = buffer[0];
-                        byteDeviceID.CopyTo(ack, 1);
-                        byteAck.CopyTo(ack, byteDeviceID.Length + 1);
+                        byte[] ack = new byte[indexMessageDeviceId.Length + byteAck.Length];
+                        indexMessageDeviceId.CopyTo(ack, 0);
+                        byteAck.CopyTo(ack, indexMessageDeviceId.Length);
 
                         await handler.SendAsync(ack, 0);
                     }
@@ -172,23 +174,13 @@ namespace DeviceMonitor
         #region Processing received data
 
         /// <summary>
-        /// Select bytes from received message representing device ID in bytes.
-        /// </summary>
-        /// <param name="data">Received data on the LAN port</param>
-        /// <returns>Device ID</returns>
-        private byte[] GetDeviceIdInBytesFromReceivedData(byte[] data)
-        {
-            return data.Skip(1).Take(4).ToArray();
-        }
-
-        /// <summary>
         /// Get the device Id.
         /// </summary>
         /// <param name="data">Received data on the LAN port</param>
         /// <returns>Device ID</returns>
         private int GetDeviceIdFromReceivedData(byte[] data)
         {
-            return BitConverter.ToInt32(GetDeviceIdInBytesFromReceivedData(data), 0);
+            return BitConverter.ToInt32(data.Skip(1).Take(4).ToArray(), 0);
         }
 
         /// <summary>
